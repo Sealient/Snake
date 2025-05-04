@@ -1,207 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snake Game - Enhanced</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    html, body {
-      height: 100%;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: white;
-    }
-    #container {
-      text-align: center;
-    }
-    canvas {
-      background: #1a1a1a;
-      border-radius: 1rem;
-      box-shadow: 0 0 20px rgba(0,255,153,0.5);
-      width: 90vmin;
-      height: 90vmin;
-      max-width: 500px;
-      max-height: 500px;
-      margin: 1rem auto;
-    }
-    #scoreBoard {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Stylish Snake Game</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="container">
-    <div id="scoreBoard">Score: 0</div>
-    <canvas id="gameCanvas"></canvas>
+  <div class="game-container">
+    <h1>Advanced Snake Game</h1>
+    <canvas id="gameCanvas" width="400" height="400" aria-label="Snake game canvas"></canvas>
+    <div class="info-bar">
+      <div>Score: <span id="score">0</span></div>
+      <div>High Score: <span id="highScore">0</span></div>
+      <div>
+        Speed: 
+        <select id="speedSelect" aria-label="Select game speed">
+          <option value="5">Easy</option>
+          <option value="8" selected>Medium</option>
+          <option value="12">Hard</option>
+          <option value="16">Extreme</option>
+        </select>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="startBtn" aria-label="Start new game">Start</button>
+      <button id="pauseBtn" aria-label="Pause game" disabled>Pause</button>
+      <button id="gridToggleBtn" aria-label="Toggle grid">Toggle Grid</button>
+    </div>
+    <p class="instructions">Use arrow keys or WASD to move. On mobile, swipe to control.</p>
+    <div id="gameOverScreen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+      <h2 id="gameOverTitle">Game Over</h2>
+      <p>Your score: <span id="finalScore">0</span></p>
+      <button id="restartBtn">Restart</button>
+    </div>
   </div>
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreBoard = document.getElementById('scoreBoard');
 
-    let tileCount = 20;
-    let tileSize;
+  <audio id="soundEat" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="soundGameOver" src="https://actions.google.com/sounds/v1/cartoon/metal_thud_and_wobble.ogg" preload="auto"></audio>
+  <audio id="soundPause" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
 
-    let headX = 10;
-    let headY = 10;
-    const snakeParts = [];
-    let tailLength = 3;
-
-    let appleX = 5;
-    let appleY = 5;
-
-    let xVelocity = 0;
-    let yVelocity = 0;
-
-    let score = 0;
-    let gameSpeed = 1000 / 10;
-
-    function resizeCanvas() {
-      const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
-      canvas.width = size;
-      canvas.height = size;
-      tileSize = canvas.width / tileCount;
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    class SnakePart {
-      constructor(x, y) {
-        this.x = x;
-        this.y = y;
-      }
-    }
-
-    function drawGame() {
-      changeSnakePosition();
-      if (isGameOver()) return;
-
-      clearScreen();
-      drawSnake();
-      drawApple();
-      checkAppleCollision();
-      drawScore();
-
-      setTimeout(drawGame, gameSpeed);
-    }
-
-    function isGameOver() {
-      if (xVelocity === 0 && yVelocity === 0) return false;
-
-      if (headX < 0 || headX >= tileCount || headY < 0 || headY >= tileCount) {
-        showGameOver();
-        return true;
-      }
-
-      for (let part of snakeParts) {
-        if (part.x === headX && part.y === headY) {
-          showGameOver();
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    function showGameOver() {
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ff4444';
-      ctx.font = '2rem sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
-    }
-
-    function clearScreen() {
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function drawSnake() {
-      ctx.fillStyle = '#00ff99';
-      for (let part of snakeParts) {
-        ctx.fillRect(part.x * tileSize, part.y * tileSize, tileSize - 2, tileSize - 2);
-      }
-
-      snakeParts.push(new SnakePart(headX, headY));
-      while (snakeParts.length > tailLength) {
-        snakeParts.shift();
-      }
-
-      ctx.fillStyle = '#00ffaa';
-      ctx.fillRect(headX * tileSize, headY * tileSize, tileSize - 2, tileSize - 2);
-    }
-
-    function drawApple() {
-      ctx.fillStyle = 'red';
-      ctx.beginPath();
-      ctx.arc((appleX + 0.5) * tileSize, (appleY + 0.5) * tileSize, tileSize / 2.5, 0, 2 * Math.PI);
-      ctx.fill();
-    }
-
-    function changeSnakePosition() {
-      headX += xVelocity;
-      headY += yVelocity;
-    }
-
-    function checkAppleCollision() {
-      if (appleX === headX && appleY === headY) {
-        appleX = Math.floor(Math.random() * tileCount);
-        appleY = Math.floor(Math.random() * tileCount);
-        tailLength++;
-        score++;
-        gameSpeed *= 0.97; // Speed up slightly every time
-      }
-    }
-
-    function drawScore() {
-      scoreBoard.textContent = `Score: ${score}`;
-    }
-
-    document.addEventListener('keydown', (e) => {
-      switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-          if (yVelocity !== 1) {
-            yVelocity = -1;
-            xVelocity = 0;
-          }
-          break;
-        case 'ArrowDown':
-        case 's':
-          if (yVelocity !== -1) {
-            yVelocity = 1;
-            xVelocity = 0;
-          }
-          break;
-        case 'ArrowLeft':
-        case 'a':
-          if (xVelocity !== 1) {
-            xVelocity = -1;
-            yVelocity = 0;
-          }
-          break;
-        case 'ArrowRight':
-        case 'd':
-          if (xVelocity !== -1) {
-            xVelocity = 1;
-            yVelocity = 0;
-          }
-          break;
-      }
-    });
-
-    drawGame();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
+
